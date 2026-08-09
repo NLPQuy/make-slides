@@ -1,0 +1,18 @@
+# LaTeX build artefacts, in case a deck is built inside this tree
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.fls
+*.fdb_latexmk
+*.vrb
+*.synctex.gz
+
+# clearbg.py / croppanel.sh scratch
+*.orig
+*.flat
+*.preview.png
+
+.DS_Store

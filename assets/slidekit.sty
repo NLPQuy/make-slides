@@ -1,0 +1,305 @@
+% ============================================================================
+%  slidekit.sty  --  disciplined metropolis for technical talks
+%  Compile with lualatex (or xelatex).
+%
+%  DESIGN CONTRACT (the rules this file mechanically enforces):
+%    1. One base size, set once in \documentclass. There is no \small in this
+%       file and there should be none in your deck. Text that does not fit
+%       gets CUT, never shrunk. 8pt is fine as a base; 8pt plus ninety-one
+%       \small commands is the deck this file exists to prevent.
+%    2. Six colours: ground, ink, key, foil, muted, and a tint of key. No more
+%       are defined, so no more can be used.
+%    3. Exactly one box: \takeaway. It holds the sentence the audience leaves
+%       with. One per frame, one line, never nested.
+%    4. Figures go through \fig / \figpair, capped in BOTH directions against
+%       the space the takeaway box actually leaves. No hand-tuned fractions.
+%    5. Everything that is provenance, caveat, or a sentence you will simply
+%       say out loud goes in \note{}, not on the slide.
+% ============================================================================
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{slidekit}[2026/08/09 disciplined metropolis]
+
+\usetheme[progressbar=frametitle, block=fill]{metropolis}
+
+% ---------------------------------------------------------------- fonts ----
+\RequirePackage{fontspec}
+\IfFontExistsTF{FiraSans-Light.otf}{%
+  \setsansfont{FiraSans}[Extension=.otf, UprightFont=*-Light, BoldFont=*-Medium,
+    ItalicFont=*-LightItalic, BoldItalicFont=*-MediumItalic]%
+  \setmonofont{FiraMono}[Extension=.otf, UprightFont=*-Regular, BoldFont=*-Medium,
+    Scale=0.92]%
+}{\IfFontExistsTF{Fira Sans}{\setsansfont{Fira Sans}}{}}
+
+% Slides are read once, at distance, at the speaker's pace. Hyphenated words
+% cost the reader a beat they do not have, and justified text opens rivers of
+% whitespace at these line lengths. Ragged right, no hyphenation, everywhere.
+% (This also removes any need for babel's hyphenation patterns, so the deck
+% compiles on a minimal TeX Live regardless of the language it is written in.)
+\raggedright
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\tolerance=1000
+
+\RequirePackage{amsmath,amssymb,mathtools}
+\RequirePackage{graphicx,booktabs,array,colortbl}
+\RequirePackage[export]{adjustbox}   % gives \width/\height inside trim=
+% Relative, inside the deck folder. Never point at another project's results
+% directory: the deck must build for whoever opens it next.
+\graphicspath{{figures/}}
+\RequirePackage{xcolor}
+\RequirePackage[normalem]{ulem}
+\RequirePackage{appendixnumberbeamer}
+\RequirePackage{microtype}
+
+% --------------------------------------------------------------- palette ---
+% Six colours. That is the whole palette. Adding a seventh is the first step
+% back to the fifteen-colour deck nobody could read.
+%
+% Three decisions, each of which the eye notices only when it is wrong.
+%
+% GROUND is ivory, not white. Pure white glares under a projector and makes
+% everything on it look clinical. #FAF9F6 removes the glare and nobody in the
+% room can tell you changed anything.
+%
+% KEY is sampled from the figures the deck shows (the paper's bars are
+% #2484A8), then darkened to clear 4.5:1 as 8pt text. A blue word and a blue
+% bar then read as the same thing without anyone saying so. An accent that is
+% merely near the figure's colour makes the slide and the chart look like two
+% designs stapled together.
+%
+% TINT is a pale wash of KEY, not a neutral beige. A neutral that relates to
+% nothing else on the slide reads as dirt, not restraint. This is the single
+% highest-leverage colour decision in the whole file.
+\definecolor{ground}{HTML}{FAF9F6}  % page                  ivory
+\definecolor{ink}   {HTML}{20262B}  % body text            14.5:1
+\definecolor{key}   {HTML}{1D6E92}  % this talk's subject   5.4:1
+\definecolor{foil}  {HTML}{C05A22}  % what it beats         4.7:1
+\definecolor{muted} {HTML}{64707A}  % captions, provenance  4.6:1
+\definecolor{paper} {HTML}{E3EDF2}  % tint of key: box, table header, track
+
+\setbeamercolor{background canvas}{bg=ground}
+\setbeamercolor{normal text}{fg=ink, bg=ground}
+\setbeamercolor{frametitle}{bg=ground, fg=ink}
+% The progress bar sits directly under the frame title, so at slide 9 of 18 a
+% half-filled bar with an invisible track reads as a rule someone forgot to
+% finish. Give the track a visible grey and thicken both: then it reads as one
+% full-width rule that happens to carry a position marker.
+\setbeamercolor{progress bar}{fg=key, bg=paper}
+\setbeamercolor{progress bar in head/foot}{fg=key, bg=paper}
+\setlength{\metropolis@progressinheadfoot@linewidth}{1.2pt}
+\setbeamercolor{alerted text}{fg=key}
+\setbeamercolor{block title alerted}{bg=paper, fg=ink}
+\setbeamercolor{block body alerted} {bg=paper, fg=ink}
+\setbeamercolor{palette primary}{bg=ink, fg=white}
+\setbeamercolor{title separator}{fg=key}
+
+\setbeamerfont{frametitle}{size=\large, series=\bfseries}
+\setbeamerfont{title}{size=\LARGE, series=\bfseries}
+\setbeamerfont{footnote}{size=\scriptsize}
+\metroset{sectionpage=progressbar, numbering=fraction}
+
+% Assertion titles run to two lines, and a dark filled slab makes two lines
+% shout. So: white title area, ink text, and the progress bar metropolis
+% already draws under it does the job of a rule.
+%
+% Do NOT replace metropolis' \setbeamertemplate{frametitle} to get this.
+% Beamer reserves the body's \textheight against the theme's own title box;
+% a taller hand-rolled template silently pushes EVERY frame down by the
+% difference, and the deck starts overflowing at the bottom for reasons that
+% look like they are about content. Recolour the theme, never re-typeset it.
+
+% ------------------------------------------------------------- semantics ---
+% Three inline marks, each with one meaning. Use at most two per frame.
+\newcommand{\K}[1]{\textcolor{key}{\textbf{#1}}}      % our method / the finding
+\newcommand{\F}[1]{\textcolor{foil}{\textbf{#1}}}     % baseline / the failure
+\newcommand{\gray}[1]{\textcolor{muted}{#1}}          % de-emphasise
+\newcommand{\sect}[1]{{\color{key}\footnotesize\textsc{#1}}}  % section marker
+
+% ------------------------------------------------------ annotating maths ---
+% \ann{...} labels a piece of a formula in plain language, normally under an
+% \underbrace:
+%
+%   \underbrace{\min_Q}_{\ann{best predictor}}
+%   \underbrace{\max_{x^n,y^n}}_{\ann{on the worst data}}
+%
+% A displayed formula whose symbols were never introduced is a slide that does
+% nothing: the audience spends the whole time decoding notation instead of
+% listening. Either annotate every operator and symbol the first time it
+% appears, or do not show the formula. "They can read it" is false at 4 metres
+% and at the speaker's pace.
+\newcommand{\ann}[1]{{\footnotesize\color{muted}\text{#1}}}
+
+% -------------------------------------------------------------- figures ----
+% Every figure is bounded by \figbudget, so a figure can never be the thing
+% that pushes a frame past the bottom edge. \takeaway (below) recomputes the
+% budget from the space its own box actually leaves.
+\newlength{\figbudget}
+\newcommand{\figsolo}{\setlength{\figbudget}{0.80\textheight}} % frame has no takeaway
+\figsolo
+
+% {\centering ...\par}, never \begin{center}: the center ENVIRONMENT adds
+% \topsep+\partopsep above and below, roughly 20pt that no height budget
+% accounts for. That alone is enough to push a correctly budgeted frame off
+% the bottom, and it is invisible in the source.
+%
+% The white card. Figures lifted out of a paper carry an opaque white
+% background, which against an ivory page shows up as a slightly-wrong bright
+% rectangle with ragged margins. The proper fix is to re-render them with
+% transparent=True, which you usually cannot do because you do not have the
+% plotting scripts. So make the white deliberate: an evenly padded card. A
+% figure sitting on a card reads as a considered choice; the same white with
+% uneven margins reads as a mistake.
+%
+% If you DO control the figures, render them transparent and set
+% \figcardfalse -- the card is then unnecessary weight.
+\newif\iffigcard \figcardtrue
+\newlength{\figcardsep}\setlength{\figcardsep}{6pt}
+\newlength{\fig@h}
+\newlength{\fig@w}
+
+\newcommand{\figcard}[1]{%
+  \iffigcard\setlength{\fboxsep}{\figcardsep}\colorbox{white}{#1}\else#1\fi
+}
+
+% The card's padding comes out of BOTH budgets. Subtracting it from the height
+% only is how a frame stops overflowing downwards and starts overflowing
+% sideways instead, by exactly 2 x \figcardsep, on every figure frame at once.
+% \fig@fit{fraction of \linewidth}
+\newcommand{\fig@fit}[1]{%
+  \setlength{\fig@h}{\figbudget}%
+  \setlength{\fig@w}{#1\linewidth}%
+  \iffigcard
+    \addtolength{\fig@h}{-2\figcardsep}%
+    \addtolength{\fig@w}{-2\figcardsep}%
+  \fi
+}
+
+\newcommand{\fig}[2][]{%
+  \fig@fit{1.0}%
+  {\centering
+   \figcard{\includegraphics[width=\fig@w,height=\fig@h,keepaspectratio,#1]{#2}}\par}%
+}
+
+% Two figures side by side, sharing the budget.
+\newcommand{\figpair}[2]{%
+  \fig@fit{0.47}%
+  {\centering
+   \figcard{\includegraphics[width=\fig@w,height=\fig@h,keepaspectratio]{#1}}\hfill
+   \figcard{\includegraphics[width=\fig@w,height=\fig@h,keepaspectratio]{#2}}\par}%
+}
+
+% Inside a \column, width binds rather than height; shrink the budget so a
+% tall narrow figure cannot run the column past the frame.
+\newcommand{\figincol}{\setlength{\figbudget}{0.62\textheight}}
+
+% There is deliberately no compile-time panel-cropping macro. LaTeX-side
+% trimming is guesswork you cannot see until you rebuild. Cut panels into
+% their own PDFs with croppanel.sh, LOOK at the preview it writes, then \fig
+% them like any other figure.
+
+% ------------------------------------------------------------- takeaway ----
+% The one box, and the only one. It holds the sentence the audience leaves
+% with. It is DECLARED AT THE TOP of the frame and EMITTED AT THE BOTTOM.
+%
+% Declaring it first is not a quirk of the implementation. It forces you to
+% write the conclusion before the evidence, which is the whole discipline:
+% if you cannot state the point in two lines, the frame does not have one yet.
+%
+% It also buys the thing hand-tuned decks never get: the box is typeset into
+% a savebox and MEASURED, so the figure budget below is computed from the
+% space actually left, not from a \textheight fraction someone guessed in
+% 2024 and never revisited. This is why frames stop overflowing.
+\newsavebox{\tk@box}
+\newif\iftk@set \tk@setfalse
+
+% \takeaway[setup details]{closing sentence}
+% The optional argument is the grey line of provenance -- dataset, model,
+% sample size, caveat. It is measured together with the block, so it can
+% never be the thing that tips the frame over the edge.
+% The box itself. Deliberately NOT beamer's alertblock: a block with an empty
+% title still typesets its title row, leaving a dead band of colour across the
+% top of the box. Hand-built here so the box is exactly text plus padding,
+% with a key-coloured rule down the left edge to give it presence without
+% needing a heavy fill.
+\newcommand{\tk@render}[1]{%
+  \setlength{\fboxsep}{0pt}%
+  \noindent\colorbox{paper}{%
+    \begin{tabular}{@{}!{\color{key}\vrule width 3.5pt}@{\hspace{0.9em}}%
+                    p{\dimexpr\textwidth-3.5pt-1.8em\relax}@{\hspace{0.9em}}@{}}
+      \rule{0pt}{1.6em}#1\rule[-1.0em]{0pt}{0pt}
+    \end{tabular}}%
+}
+
+\newcommand{\takeaway}[2][]{%
+  \begin{lrbox}{\tk@box}%
+    \begin{minipage}{\textwidth}%
+      \if\relax\detokenize{#1}\relax\else
+        {\footnotesize\color{muted}#1\par}\vspace{0.5em}%
+      \fi
+      \tk@render{#2}%
+    \end{minipage}%
+  \end{lrbox}%
+  \tk@settrue
+
+  % 4em of slack covers what \ht+\dp cannot see: the \par baselineskip after
+  % the figure, the frame's own top/bottom padding, and the glue \vfill needs
+  % to stay glue. Measured empirically against an overflowing minimal case;
+  % do not shave it to reclaim a few points of figure height.
+  % Slack = the 1.4em gap \showtakeaway leaves, plus frame padding and the
+  % \par baselineskip after the figure, which \ht+\dp cannot see. Part em so
+  % it tracks the base size, part absolute because frame padding does not.
+  % Measured against a minimal failing case; do not shave it to reclaim a few
+  % points of figure height.
+  \setlength{\figbudget}{\dimexpr\textheight-\ht\tk@box-\dp\tk@box-5.5em-6pt\relax}%
+}
+
+% Emit it, directly under the evidence with a fixed gap.
+%
+% NOT pinned to the bottom with \vfill, though that is the obvious thing to
+% reach for. Beamer frames default to `c`, so beamer has already put its own
+% \vfill above and below the body; adding two more makes four competing fils,
+% the slack splits 2:1:1, and the result is content stranded high with a hole
+% under it. Leaving the group solid lets beamer centre it as one block, so a
+% frame grows from the middle outwards in both directions as content is added.
+\newcommand{\showtakeaway}{%
+  \iftk@set\vspace{1.4em}\usebox{\tk@box}\tk@setfalse\fi
+}
+
+% Figure credit / axis reading hint, sits directly under a figure.
+\newcommand{\figcap}[1]{{\footnotesize\color{muted}#1\par}}
+
+% ------------------------------------------------------------ title page ---
+% metropolis' own \titlepage overshoots a [plain] frame by ~15.6pt, on an
+% empty deck, in every version tested. Verified against a four-line minimal
+% file, so it is the theme and not your content. Absorb it once here rather
+% than letting it sit in the overflow report forever and train you to ignore
+% the report.
+\newcommand{\titleframe}{%
+  \begin{frame}[plain,noframenumbering]
+    \vspace*{-1.5em}\titlepage
+  \end{frame}%
+}
+
+% --------------------------------------------------------- speaker notes ---
+% Anything that is provenance, caveat, or a sentence you will simply say out
+% loud belongs in \note{}, not on the slide. This is where the prose the old
+% deck crammed into "Doc" boxes actually goes.
+%   speaker copy:  \setbeameroption{show notes}         (slide + note pages)
+%   notes only:    \setbeameroption{show only notes}
+\setbeameroption{hide notes}
+
+% ---------------------------------------------------------------- tables ---
+% Tables on slides are read at 4 metres. Row spacing and rule colour, not font
+% size, are what make them legible: black hairlines chop a table into bands and
+% compete with the data, while rules in the accent hue recede and read as
+% structure.
+\arrayrulecolor{key}
+
+% Header row: tinted band, no bold. \rowcolor must be the first thing in the
+% row, and with booktabs it goes AFTER \toprule.
+\newcommand{\headrow}{\rowcolor{paper}}
+
+% Row spacing for a table that has to be legible from the back of a room.
+\newcommand{\slidetable}{\renewcommand{\arraystretch}{1.4}}
+
+\endinput

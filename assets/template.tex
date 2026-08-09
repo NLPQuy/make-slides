@@ -1,0 +1,129 @@
+% ============================================================================
+%  Starting point for a technical talk. Copy this file, keep the shape.
+%
+%  Build:  ./checkslides.sh slides.tex
+%          It refuses to pass while any frame overflows, and prints a style
+%          audit. Do not ship a deck it has not passed.
+%
+%  Speaker copy with notes:
+%          change \setbeameroption in slidekit.sty to `show notes`, rebuild.
+% ============================================================================
+\documentclass[8pt,aspectratio=169]{beamer}
+\usepackage{slidekit}
+
+\title{Short noun phrase}
+\subtitle{One line saying what this is}
+\author{Paper authors \quad\gray{venue, year}}
+\date{\gray{Presenter: name \quad occasion, date}}
+
+\begin{document}
+
+\titleframe
+
+% The outline is the ARGUMENT, not a list of nouns. \tableofcontents gives you
+% four words in a column down the left of an otherwise empty slide.
+%
+% But keep it MINIMAL: one row per section, three short columns, nothing else.
+% A richer version with a gloss column and small-caps markers was built and
+% rejected as cluttered -- it is slide two, the audience has not warmed up, and
+% every extra element is one they have to skip. The middle column carries the
+% section name; the right column carries the single symbol or number that
+% section delivers, so the notation is met once before it matters.
+\begin{frame}{Outline}
+  \begin{center}
+  \renewcommand{\arraystretch}{2.4}
+  \begin{tabular}{@{}r@{\hspace{1.4em}}l@{\hspace{2.4em}}l@{}}
+    \gray{1} & Problem   & the quantity nobody can define \\
+    \gray{2} & Theory    & $\text{the computable bound}$ \\
+    \gray{3} & Results   & $\text{the number}$ \\
+    \gray{4} & Appraisal & the caveat \\
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+% ===========================================================================
+\section{Short section label}
+% ===========================================================================
+
+% ---------------------------------------------------------------------------
+% THE ONLY FRAME SHAPE. Every frame in the deck looks like this.
+%
+%   title       a LABEL, 2-4 words. Not a sentence, not a compressed abstract.
+%   \takeaway   the finding, ONE line. Written FIRST, before the evidence.
+%               If you cannot state it in one line, the frame has no point yet
+%               and needs splitting.
+%   body        ONE piece of evidence: a figure, or a table, or a derivation.
+%               Never a figure and a table showing the same numbers.
+%   \note       everything else. Setup, sample sizes, caveats, the sentences
+%               you will actually speak. This is where prose lives.
+% ---------------------------------------------------------------------------
+\begin{frame}{Label}
+  \takeaway{The one thing to remember, stated as a claim, on one line.}
+
+  \fig{some_figure}
+
+  \showtakeaway
+  \note{Model, dataset, n, protocol. What the axes mean. The caveat you would
+    mention if asked. Anything you would have been tempted to put in a
+    "how to read this" box on the slide itself.}
+\end{frame}
+
+% Optional grey provenance line, measured together with the box so it can
+% never tip the frame over the edge:
+%   \takeaway[n=5000, single seed]{The claim.}
+
+% Two figures that must be COMPARED go side by side, never stacked. A stacked
+% pair wastes the width of a 16:9 frame and defeats comparison. If the paper
+% stacked them, split the PDF with croppanel.sh:
+%   ./croppanel.sh figures/combined.pdf                     # print the bbox
+%   ./croppanel.sh figures/combined.pdf out.pdf x0 y0 x1 y1 # crop
+%   -> then LOOK at the .preview.png it writes. Every crop this skill has ever
+%      got wrong was one nobody looked at.
+\begin{frame}{Label}
+  \takeaway{What the comparison shows.}
+
+  \figpair{left_panel}{right_panel}
+
+  \showtakeaway
+  \note{}
+\end{frame}
+
+% Tables: tint the header row with \headrow, immediately after \toprule.
+% Rules are already in the accent colour; black hairlines chop a table into
+% bands and compete with the data.
+%
+%   \begin{tabular}{@{}lc@{}}
+%     \toprule
+%     \headrow
+%     Metric & value \\
+%     \midrule
+%     ...
+%     \bottomrule
+%   \end{tabular}
+
+% Two columns: text one side, evidence the other. Keep the text side to three
+% short items. If it needs four, the frame is two frames.
+%
+% [c], not [T], whenever a text column is paired with a FIGURE column. The two
+% will never be the same height, and [T] pins the short one to the top where it
+% hangs stranded above a hole. Keep [T] only for text against text.
+\begin{frame}{Label}
+  \takeaway{The claim.}
+
+  \begin{columns}[c]
+    \column{0.44\textwidth}
+      \begin{itemize}\setlength\itemsep{0.7em}
+        \item short phrase
+        \item short phrase
+        \item short phrase, with \F{the failing thing} marked
+      \end{itemize}
+
+    \column{0.52\textwidth}
+      \fig{some_figure}
+  \end{columns}
+
+  \showtakeaway
+  \note{}
+\end{frame}
+
+\end{document}
