@@ -30,6 +30,18 @@ eight figures -- the damage was only visible on a rendered slide.
 """
 import re, sys, zlib, shutil, subprocess, os, tempfile
 
+# Ghostscript is required here: this script edits the PDF content stream and
+# then has to re-serialise it. The binary is `gs` on Unix and `gswin64c` on
+# Windows, and TeX Live ships neither, so resolve the name up front and fail
+# with an instruction rather than a FileNotFoundError from 100 lines down.
+GS = next((c for c in ("gs", "gswin64c", "gswin32c") if shutil.which(c)), None)
+if GS is None and __name__ == "__main__":
+    sys.exit("clearbg.py needs ghostscript on PATH (gs, or gswin64c on Windows).\n"
+             "  macOS:   brew install ghostscript\n"
+             "  Windows: winget install ArtifexSoftware.GhostScript\n"
+             "Without gs: re-render the figure with transparent=True, or leave\n"
+             "\\figcardtrue so the white sits on a deliberate card.")
+
 LEAD = re.compile(
     rb"\A(\s*q[^\n]*\n)"
     rb"((?:1|1\.0+)\s+g\s*\n"
@@ -41,7 +53,7 @@ LEAD = re.compile(
 def ink(path):
     """Bounding box of everything actually drawn, rounded to whole points."""
     r = subprocess.run(
-        ["gs", "-q", "-dNOPAUSE", "-dBATCH", "-dUseCropBox", "-sDEVICE=bbox", path],
+        [GS, "-q", "-dNOPAUSE", "-dBATCH", "-dUseCropBox", "-sDEVICE=bbox", path],
         capture_output=True, text=True)
     m = re.search(r"%%HiResBoundingBox: ([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)", r.stderr)
     if not m:
@@ -80,7 +92,7 @@ def flatten(path):
     gs are already flat and this is a no-op for them.
     """
     tmp = tempfile.mktemp(suffix=".pdf")
-    r = subprocess.run(["gs", "-q", "-o", tmp, "-sDEVICE=pdfwrite", "-dQUIET", path],
+    r = subprocess.run([GS, "-q", "-o", tmp, "-sDEVICE=pdfwrite", "-dQUIET", path],
                        capture_output=True)
     if r.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 0:
         shutil.move(tmp, path)
@@ -137,7 +149,7 @@ def clear(path, check=False, allwhite=False):
         shutil.copyfile(path, path + ".orig")
         tmp = tempfile.mktemp(suffix=".pdf")
         open(tmp, "wb").write(out)
-        r = subprocess.run(["gs", "-q", "-o", path, "-sDEVICE=pdfwrite", "-dQUIET", tmp],
+        r = subprocess.run([GS, "-q", "-o", path, "-sDEVICE=pdfwrite", "-dQUIET", tmp],
                            capture_output=True)
         os.remove(tmp)
 

@@ -266,7 +266,13 @@
 }
 
 % Figure credit / axis reading hint, sits directly under a figure.
-\newcommand{\figcap}[1]{{\footnotesize\color{muted}#1\par}}
+%
+% The leading \par is load-bearing. \fig ends with one, so \figcap after \fig
+% was always fine, but the evidence is not always a \fig: a tikzpicture or a
+% pgfplots axis leaves TeX in horizontal mode, and without the \par the
+% caption's first line shares the line box with the figure. It then sits
+% beside the figure instead of under it, and drags the whole row off centre.
+\newcommand{\figcap}[1]{\par\vspace{0.25em}{\footnotesize\color{muted}#1\par}}
 
 % ------------------------------------------------------------ title page ---
 % metropolis' own \titlepage overshoots a [plain] frame by ~15.6pt, on an
