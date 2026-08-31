@@ -29,16 +29,27 @@
 % every extra element is one they have to skip. The middle column carries the
 % section name; the right column carries the single symbol or number that
 % section delivers, so the notation is met once before it matters.
+% \makebox, NOT {\centering ...\par}, and not \begin{center} either. A centering group that is
+% the FIRST thing in a frame body silently drops its contents: the frame compiles, the checker
+% passes, and the slide ships blank. Measured, seven cases:
+%   bare tabular              -> renders
+%   {\centering T\par} first   -> VANISHES
+%   {\centering T} first       -> VANISHES
+%   \begin{center}T\end{center} -> renders (but costs ~20pt of unbudgeted space)
+%   any text, then {\centering T\par} -> renders
+%   \takeaway, then {\centering T\par} -> renders
+%   \makebox[\textwidth]{T}    -> renders
+% So the deck-wide rule "{\centering ...\par}, never \begin{center}" holds everywhere EXCEPT as
+% the first element of a frame body. There, use \makebox.
 \begin{frame}{Outline}
-  \begin{center}
   \renewcommand{\arraystretch}{2.4}
+  \makebox[\textwidth]{%
   \begin{tabular}{@{}r@{\hspace{1.4em}}l@{\hspace{2.4em}}l@{}}
     \gray{1} & Problem   & the quantity nobody can define \\
     \gray{2} & Theory    & $\text{the computable bound}$ \\
     \gray{3} & Results   & $\text{the number}$ \\
     \gray{4} & Appraisal & the caveat \\
-  \end{tabular}
-  \end{center}
+  \end{tabular}}
 \end{frame}
 
 % ===========================================================================

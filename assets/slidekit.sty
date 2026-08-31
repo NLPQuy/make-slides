@@ -192,6 +192,17 @@
 % tall narrow figure cannot run the column past the frame.
 \newcommand{\figincol}{\setlength{\figbudget}{0.62\textheight}}
 
+% A HAND-DRAWN DIAGRAM (tikzpicture, pgfplots without an explicit width) is typeset at its
+% NATURAL size, which on a 16:9 frame is a postage stamp adrift in white space. \fig cannot
+% help: it takes a file. So diagrams need their own wrapper, and it has to be ONE wrapper used
+% for all of them -- scaling each by hand gives a deck where every diagram is a different size.
+%
+% \makebox, not {\centering ...\par}: see the note on \takeaway below. A centering group that is
+% the FIRST thing in a frame body silently drops its contents.
+% max totalheight keeps a tall diagram inside the budget the takeaway left.
+\newcommand{\dia}[1]{%
+  \makebox[\linewidth]{\adjustbox{max totalheight=\figbudget}{\resizebox{0.94\linewidth}{!}{#1}}}}
+
 % There is deliberately no compile-time panel-cropping macro. LaTeX-side
 % trimming is guesswork you cannot see until you rebuild. Cut panels into
 % their own PDFs with croppanel.sh, LOOK at the preview it writes, then \fig
@@ -252,6 +263,16 @@
   % points of figure height.
   \setlength{\figbudget}{\dimexpr\textheight-\ht\tk@box-\dp\tk@box-5.5em-6pt\relax}%
 }
+
+% \figbudget IS COMPUTED HERE, AT THE MOMENT \takeaway IS CALLED. Anything you add to the frame
+% AFTER it that occupies vertical space -- a locator line, a section marker, a caption above the
+% figure -- is invisible to that computation and every figure frame then overflows by exactly the height
+% you added. If you introduce such a macro, make it subtract its own height:
+%
+%   \newcommand{\locator}[1]{\sect{#1}\par\vspace{0.7em}%
+%     \addtolength{\figbudget}{-\baselineskip}\addtolength{\figbudget}{-0.7em}}
+%
+% Symptom when you forget: every frame with a figure overflows by the SAME small amount.
 
 % Emit it, directly under the evidence with a fixed gap.
 %

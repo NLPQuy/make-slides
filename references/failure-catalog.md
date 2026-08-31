@@ -304,3 +304,101 @@ Roughly 1.5–2 minutes per content slide, section pages excluded.
 | Conference talk, 12 min | 8–10 |
 | Reading group, 20 min | 12–15 |
 | Lab seminar, 40 min | 18–22 |
+
+---
+
+## Part 3. Measured on a 54-frame Vietnamese progress deck
+
+A document-deck (read far more often than presented) about a drone localisation
+pipeline. `checkslides.sh` reported clean for every failure below, which is the
+point of the section.
+
+### Content that is silently absent
+
+**A centering group as the first element of a frame body drops its contents.**
+The Outline slide shipped blank. LuaLaTeX exited 0, the checker passed, and the
+only way to find it was rasterising the page. Seven cases, measured:
+
+| in a frame body | result |
+|---|---|
+| bare `tabular` | renders |
+| `{\centering T\par}` first | **vanishes** |
+| `{\centering T}` first, no `\par` | **vanishes** |
+| `\begin{center}T\end{center}` | renders |
+| any text, then `{\centering T\par}` | renders |
+| `\takeaway{...}`, then `{\centering T\par}` | renders |
+| `\makebox[\textwidth]{T}` | renders |
+
+So "`{\centering ...\par}`, never `\begin{center}`" holds everywhere except the
+first element of a body. `assets/template.tex` used `\begin{center}` for exactly
+this reason without saying so; it now uses `\makebox` and says why.
+
+**A pgfplots bar clipped away while its label survives.** `ybar` offsets the
+first series left of its symbolic coordinate, `xmin` is pinned at the first
+label, and the bar falls outside the axis. Its `nodes near coords` label still
+prints, landing beside the y-axis where it reads as **an axis tick**. The chart
+looked complete and was missing two of eight bars. Three attempts, two of which
+looked fixed and were not:
+
+1. `enlarge x limits`, relative then `abs=` -- does not move `xmin` here.
+2. `clip=false` -- the bar appears, *outside* the y-axis. Easy to accept at a
+   glance.
+3. Numeric x coordinates + `xticklabels` + hand-set `xmin`/`xmax` -- correct.
+
+**A caveat stranded in `\note{}`.** An appendix table listed a flight at 15 m
+among flights at 3--7 m; the note explaining that its ground truth carries a
+known constant 15 m offset was in `\note{}`, hidden in the PDF. A reader draws
+the opposite conclusion from the one the data supports. Anything needed to not
+misread a number belongs on the slide.
+
+### Layout
+
+**Diagrams at natural size.** Seven `tikzpicture` diagrams, each a stamp in the
+middle of an empty frame. `\fig` could not help (it takes a file), so nothing in
+the budget machinery applied. Fixed with one `\dia` wrapper for all of them,
+which is now in `slidekit.sty`. Scaling them individually would have produced
+seven different diagram sizes.
+
+**A locator line that overflowed every figure frame by the same amount.** A
+one-line stage marker added after `\takeaway` pushed each figure frame 14.5pt
+over, because `\takeaway` had already computed `\figbudget`. A macro that adds
+height must subtract it back.
+
+**Figure canvas aspect not matching its content.** Two image pairs stacked in an
+11x6.4in canvas whose content was 2:1 -- `\fig` preserves aspect, so the figure
+arrived at half size inside a white band. Computing `figsize` from the content
+aspect, and splitting the comparison across two frames, fixed it.
+
+**`\foreach` inside `\newcommand`** -> `Illegal parameter number in definition of
+\iterate`, and a build that fails with no obvious link to the diagram.
+
+### Flow, on a deck that is also a document
+
+**A section whose slides did not follow its own diagram.** Section 2 opened with
+a five-block pipeline diagram, then covered block 1, block 3, block 4, and left
+block 2 to a later section. Every individual slide was fine. Fixed by cutting the
+sections along the line the summary slide already claimed: what existed before,
+then each new mechanism in turn.
+
+**Bare section pages.** The theme prints the section name and nothing else, so a
+reader gets no bridge. Replaced with a page carrying the section list (current
+one marked), what was just established, and the question this section answers.
+
+**Named mechanisms never defined.** Three components appeared by name in results
+tables before any frame said what they were, and each one had to be added after a
+reader asked. Sweep for named components the way you sweep for notation.
+
+**"They will read it" answered by adding prose.** The first instinct on being
+told the deck is a document was a two-to-four sentence block per frame. That is
+the wall of text this skill exists to prevent. More frames, each still one
+takeaway and one piece of evidence.
+
+### Numbers
+
+**Decimal separators split between chart and prose.** `nodes near coords` printed
+`48.2` in a deck whose tables printed `48,2`.
+
+**A table comparing two things without saying which two.** Columns labelled
+`fit 1 frame` and `fit pooled` differed in *two* variables at once (arm and a
+second condition) with the second never named in the header. Group the columns
+and put the condition in the group header.
